@@ -29,7 +29,7 @@ namespace PriorityLock.LockManager_v1
             _capacity = _maxConcurrentOperations;
             _tryStartOperationTimeSpan = tryStartOperationTimeSpan;
 
-            _locker = new ReaderWriterLockSlim();
+            _locker = new object();
             _pendingLocksReaderWriterLock = new ReaderWriterLockSlim();
             _pendingPriorities = new SortedSet<PendingPriority>();
 
@@ -209,7 +209,7 @@ namespace PriorityLock.LockManager_v1
             private bool _isDisposed;
 
 
-            public Locker(LockManager lockManager, int priority = 0)
+            public Locker(LockManager lockManager, in int priority = 0)
             {
                 _lockManager = lockManager;
                 _lockManager.StartLock(priority);

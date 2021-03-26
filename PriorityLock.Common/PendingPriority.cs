@@ -8,7 +8,7 @@ namespace PriorityLock.Common
         public int PendingThreadsCounter;
 
 
-        public PendingPriority(int priority)
+        public PendingPriority(in int priority)
         {
             Priority = priority;
         }
