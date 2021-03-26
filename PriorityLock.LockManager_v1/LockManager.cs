@@ -50,12 +50,14 @@ namespace PriorityLock.LockManager_v1
 
         private void Release()
         {
-            _logger.WriteLine($"Release Stated. ThreadId: '{Thread.CurrentThread.ManagedThreadId}'");
-
             _logger.WriteLine("Release. " + GetCurrentState());
 
             var currentThreadId = Thread.CurrentThread.ManagedThreadId;
             var index = Array.FindIndex(_threadIds, x => x == currentThreadId);
+            if (index == -1)
+            {
+                throw new InvalidOperationException("Currrent therad is not locked");
+            }
 
             Interlocked.Exchange(ref _threadIds[index], 0);
             Interlocked.Increment(ref _capacity);
@@ -105,6 +107,11 @@ namespace PriorityLock.LockManager_v1
             try
             {
                 var freeIndex = Array.FindIndex(_threadIds, x => x == 0);
+                if (freeIndex == -1)
+                {
+                    throw new InvalidOperationException("No free index for thread");
+                }
+
                 _threadIds[freeIndex] = Thread.CurrentThread.ManagedThreadId;
                 _priorities[freeIndex] = priority;
             }
@@ -121,21 +128,29 @@ namespace PriorityLock.LockManager_v1
                 return true;
             }
 
-            if (_pendingPriorities.Count == 0)
+            _pendingLocksReaderWriterLock.EnterReadLock();
+            try
             {
-                return true;
-            }
+                if (_pendingPriorities.Count == 0)
+                {
+                    return true;
+                }
 
-            return _pendingPriorities.Max.Priority <= thisThreadPriority;
+                return _pendingPriorities.Max.Priority <= thisThreadPriority;
+            }
+            finally
+            {
+                _pendingLocksReaderWriterLock.ExitReadLock();
+            }
         }
 
         private void IncrementPriorityWaitingCounter(in int thisThreadPriority)
         {
-            _pendingLocksReaderWriterLock.EnterWriteLock();
+            var dummyPriority = new PendingPriority(thisThreadPriority);
 
+            _pendingLocksReaderWriterLock.EnterWriteLock();
             try
             {
-                var dummyPriority = new PendingPriority(thisThreadPriority);
                 if (_pendingPriorities.TryGetValue(dummyPriority, out var pendingPriority))
                 {
                     pendingPriority.PendingThreadsCounter++;
@@ -154,11 +169,11 @@ namespace PriorityLock.LockManager_v1
 
         private void DecrementPriorityWaitingCounter(in int thisThreadPriority)
         {
-            _pendingLocksReaderWriterLock.EnterWriteLock();
+            var dummyPriority = new PendingPriority(thisThreadPriority);
 
+            _pendingLocksReaderWriterLock.EnterWriteLock();
             try
             {
-                var dummyPriority = new PendingPriority(thisThreadPriority);
                 if (_pendingPriorities.TryGetValue(dummyPriority, out var pendingPriority))
                 {
                     if (pendingPriority.PendingThreadsCounter == 1)
@@ -172,7 +187,7 @@ namespace PriorityLock.LockManager_v1
                 }
                 else
                 {
-                    throw new InvalidOperationException("How did we get here");
+                    throw new InvalidOperationException("No such item in pending priority.");
                 }
             }
             finally
