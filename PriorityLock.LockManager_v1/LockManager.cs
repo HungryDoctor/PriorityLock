@@ -52,8 +52,7 @@ namespace PriorityLock.LockManager_v1
         {
             _logger.WriteLine("Release. " + GetCurrentState());
 
-            var currentThreadId = Thread.CurrentThread.ManagedThreadId;
-            var index = Array.FindIndex(_threadIds, x => x == currentThreadId);
+            var index = Array.IndexOf(_threadIds, Thread.CurrentThread.ManagedThreadId);
             if (index == -1)
             {
                 throw new InvalidOperationException("Currrent therad is not locked");
@@ -106,7 +105,7 @@ namespace PriorityLock.LockManager_v1
 
             try
             {
-                var freeIndex = Array.FindIndex(_threadIds, x => x == 0);
+                var freeIndex = Array.IndexOf(_threadIds, 0);
                 if (freeIndex == -1)
                 {
                     throw new InvalidOperationException("No free index for thread");
