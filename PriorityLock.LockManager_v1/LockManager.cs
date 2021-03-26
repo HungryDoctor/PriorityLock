@@ -19,7 +19,7 @@ namespace PriorityLock.LockManager_v1
         private readonly int[] _priorities;
         private long _capacity;
 
-        public int Capacity => (int)_capacity;
+        public int Capacity => (int)Interlocked.Read(ref _capacity);
 
 
         public LockManager(int maxConcurrentOperations, TimeSpan tryStartOperationTimeSpan, ILogger logger)
@@ -51,23 +51,14 @@ namespace PriorityLock.LockManager_v1
         private void Release()
         {
             _logger.WriteLine($"Release Stated. ThreadId: '{Thread.CurrentThread.ManagedThreadId}'");
-            _locksReaderWriterLock.EnterWriteLock();
 
-            _logger.WriteLine($"Release. ThreadId: '{Thread.CurrentThread.ManagedThreadId}'. Current priorities state: {string.Join(", ", _priorities)}\n");
+            _logger.WriteLine("Release. " + GetCurrentState());
 
-            try
-            {
-                var currentThreadId = Thread.CurrentThread.ManagedThreadId;
-                var index = Array.FindIndex(_threadIds, x => x == currentThreadId);
-                _threadIds[index] = 0;
-                _priorities[index] = 0;
+            var currentThreadId = Thread.CurrentThread.ManagedThreadId;
+            var index = Array.FindIndex(_threadIds, x => x == currentThreadId);
 
-                _capacity++;
-            }
-            finally
-            {
-                _locksReaderWriterLock.ExitWriteLock();
-            }
+            Interlocked.Exchange(ref _threadIds[index], 0);
+            Interlocked.Increment(ref _capacity);
         }
 
         private void StartLock(in int priority)
@@ -87,17 +78,19 @@ namespace PriorityLock.LockManager_v1
                 _locksReaderWriterLock.EnterUpgradeableReadLock();
                 try
                 {
-                    if (_capacity > 0 && IsHighestPriorityFromPending(priority))
+                    long currentCapacity = _capacity;
+                    if (currentCapacity > 0 && IsHighestPriorityFromPending(priority))
                     {
-                        _locksReaderWriterLock.EnterWriteLock();
+                        long lowerCapacity = currentCapacity - 1;
+                        if (Interlocked.CompareExchange(ref _capacity, currentCapacity - 1, currentCapacity) == currentCapacity)
+                        {
+                            _locksReaderWriterLock.EnterWriteLock();
+                            stopWatch.Stop();
 
-                        _capacity--;
-                        DecrementPriorityWaitingCounter(priority);
-                        stopWatch.Stop();
+                            _logger.WriteLine("Lock Accquired. " + GetCurrentState());
 
-                        _logger.WriteLine($"\nLock Accquired. ThreadId: '{Thread.CurrentThread.ManagedThreadId}'. Current priorities state: {string.Join(", ", _priorities)}\n");
-
-                        break;
+                            break;
+                        }
                     }
                 }
                 finally
@@ -113,6 +106,8 @@ namespace PriorityLock.LockManager_v1
                     spinWait.Reset();
                 }
             }
+
+            DecrementPriorityWaitingCounter(priority);
 
             try
             {
@@ -191,6 +186,11 @@ namespace PriorityLock.LockManager_v1
             {
                 _pendingLocksReaderWriterLock.ExitWriteLock();
             }
+        }
+
+        private string GetCurrentState()
+        {
+            return $"ThreadId: '{Thread.CurrentThread.ManagedThreadId}'. Current threads state: {string.Join(", ", _threadIds)}. Current priorities state: {string.Join(", ", _priorities)}\n";
         }
 
 
