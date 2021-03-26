@@ -12,7 +12,7 @@ namespace PriorityLock.LockManager_v1
         private readonly ILogger _logger;
         private readonly int _maxConcurrentOperations;
         private readonly TimeSpan _tryStartOperationTimeSpan;
-        private readonly ReaderWriterLockSlim _locksReaderWriterLock;
+        private readonly object _locker;
         private readonly ReaderWriterLockSlim _pendingLocksReaderWriterLock;
         private readonly SortedSet<PendingPriority> _pendingPriorities;
         private readonly int[] _threadIds;
@@ -29,7 +29,7 @@ namespace PriorityLock.LockManager_v1
             _capacity = _maxConcurrentOperations;
             _tryStartOperationTimeSpan = tryStartOperationTimeSpan;
 
-            _locksReaderWriterLock = new ReaderWriterLockSlim();
+            _locker = new ReaderWriterLockSlim();
             _pendingLocksReaderWriterLock = new ReaderWriterLockSlim();
             _pendingPriorities = new SortedSet<PendingPriority>();
 
@@ -75,28 +75,21 @@ namespace PriorityLock.LockManager_v1
                     throw new TimeoutException("Can't accquire lock");
                 }
 
-                _locksReaderWriterLock.EnterUpgradeableReadLock();
-                try
+                long currentCapacity = _capacity;
+                if (currentCapacity > 0 && IsHighestPriorityFromPending(priority))
                 {
-                    long currentCapacity = _capacity;
-                    if (currentCapacity > 0 && IsHighestPriorityFromPending(priority))
+                    long lowerCapacity = currentCapacity - 1;
+                    if (Interlocked.CompareExchange(ref _capacity, currentCapacity - 1, currentCapacity) == currentCapacity)
                     {
-                        long lowerCapacity = currentCapacity - 1;
-                        if (Interlocked.CompareExchange(ref _capacity, currentCapacity - 1, currentCapacity) == currentCapacity)
-                        {
-                            _locksReaderWriterLock.EnterWriteLock();
-                            stopWatch.Stop();
+                        Monitor.Enter(_locker);
+                        stopWatch.Stop();
 
-                            _logger.WriteLine("Lock Accquired. " + GetCurrentState());
+                        _logger.WriteLine("Lock Accquired. " + GetCurrentState());
 
-                            break;
-                        }
+                        break;
                     }
                 }
-                finally
-                {
-                    _locksReaderWriterLock.ExitUpgradeableReadLock();
-                }
+
 
                 bool willYield = spinWait.NextSpinWillYield;
 
@@ -117,7 +110,7 @@ namespace PriorityLock.LockManager_v1
             }
             finally
             {
-                _locksReaderWriterLock.ExitWriteLock();
+                Monitor.Exit(_locker);
             }
         }
 
