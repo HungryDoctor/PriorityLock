@@ -1,5 +1,4 @@
-﻿using PriorityLock.Common;
-using PriorityLock.Common.Interfaces;
+﻿using PriorityLock.Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -145,7 +144,7 @@ namespace PriorityLock.LockManager_v1
 
         private void IncrementPriorityWaitingCounter(in int thisThreadPriority)
         {
-            var dummyPriority = new PendingPriority(thisThreadPriority);
+            var dummyPriority = new PendingPriority(in thisThreadPriority);
 
             _pendingLocksReaderWriterLock.EnterWriteLock();
             try
@@ -168,7 +167,7 @@ namespace PriorityLock.LockManager_v1
 
         private void DecrementPriorityWaitingCounter(in int thisThreadPriority)
         {
-            var dummyPriority = new PendingPriority(thisThreadPriority);
+            var dummyPriority = new PendingPriority(in thisThreadPriority);
 
             _pendingLocksReaderWriterLock.EnterWriteLock();
             try
@@ -234,6 +233,55 @@ namespace PriorityLock.LockManager_v1
                 GC.SuppressFinalize(this);
 
                 _isDisposed = true;
+            }
+        }
+
+
+        private sealed class PendingPriority : IEquatable<PendingPriority>, IComparable<PendingPriority>
+        {
+            public readonly int Priority;
+            public int PendingThreadsCounter;
+
+
+            public PendingPriority(in int priority)
+            {
+                Priority = priority;
+            }
+
+
+            public int CompareTo(PendingPriority other)
+            {
+                if (other == null)
+                {
+                    return -1;
+                }
+
+                return Priority.CompareTo(other.Priority);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (obj is PendingPriority pendingPriority)
+                {
+                    return Equals(pendingPriority);
+                }
+
+                return base.Equals(obj);
+            }
+
+            public bool Equals(PendingPriority other)
+            {
+                return other != null && Priority == other.Priority;
+            }
+
+            public override int GetHashCode()
+            {
+                return Priority.GetHashCode();
+            }
+
+            public override string ToString()
+            {
+                return $"Priority: '{Priority}', PendingThreadsCounter: '{PendingThreadsCounter}'";
             }
         }
     }
