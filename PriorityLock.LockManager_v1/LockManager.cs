@@ -236,7 +236,6 @@ namespace PriorityLock.LockManager_v1
             }
         }
 
-
         private sealed class PendingPriority : IEquatable<PendingPriority>, IComparable<PendingPriority>
         {
             public readonly int Priority;
