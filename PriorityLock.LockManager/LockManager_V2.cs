@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace PriorityLock.LockManager
 {
-    public class LockManager_V2 : ILockManager
+    public class LockManager_V2 : ILockManager, IDisposable
     {
         private static readonly TimeSpan resetEventWaitTimeSpan = TimeSpan.FromSeconds(10);
         private readonly ILogger _logger;
@@ -19,6 +19,7 @@ namespace PriorityLock.LockManager
         private readonly int[] _operationsTokens;
         private readonly int[] _priorities;
         private long _capacity;
+        private bool _disposed;
 
         public int Capacity => (int)Interlocked.Read(ref _capacity);
 
@@ -37,6 +38,7 @@ namespace PriorityLock.LockManager
 
             _operationsTokens = new int[_maxConcurrentOperations];
             _priorities = new int[_maxConcurrentOperations];
+            _disposed = false;
 
             ClearTokens();
         }
@@ -47,8 +49,36 @@ namespace PriorityLock.LockManager
         }
 
 
+        ~LockManager_V2()
+        {
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                _resetEvent.Dispose();
+                _pendingLocksReaderWriterLock.Dispose();
+
+                _disposed = true;
+            }
+        }
+
+
         public ILocker Lock(int priority = 0)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(LockManager_V2));
+            }
+
             return new Locker(this, in priority);
         }
 
@@ -64,6 +94,11 @@ namespace PriorityLock.LockManager
 
         private int StartLock(in int priority)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(LockManager_V2));
+            }
+
             IncrementPriorityWaitingCounter(priority);
 
             SpinWait spinWait = new SpinWait();

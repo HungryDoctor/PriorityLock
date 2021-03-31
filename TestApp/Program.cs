@@ -1,5 +1,6 @@
 ﻿using PriorityLock.Common.Interfaces;
 using PriorityLock.LockManager;
+using System;
 using System.Threading.Tasks;
 using TestApp.Dummy;
 using TestApp.Dummy.Interfaces;
@@ -14,6 +15,8 @@ namespace TestApp
 
             PerformActions(logger, new LockManager(10, logger));
             logger.SaveToFile("./logFile_v1.log");
+
+            Console.ReadKey();
 
             PerformActions(logger, new LockManager_V2(10, logger));
             logger.SaveToFile("./logFile_v2.log");
