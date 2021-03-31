@@ -1,5 +1,4 @@
 ﻿using PriorityLock.Common.Interfaces;
-using PriorityLock.LockManager_v1;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -11,17 +10,17 @@ namespace TestApp.Dummy
     {
         private readonly ILogger _logger;
         private readonly DummyClass _dummyClass;
-        private readonly LockManager _lockManager;
+        private readonly ILockManager _lockManager;
 
         public int Capacity => _lockManager.Capacity;
         public int OperationsCounter => _dummyClass.OperationsCounter;
 
 
-        public DummyWithConcurrencyLock(ILogger logger)
+        public DummyWithConcurrencyLock(ILogger logger, ILockManager lockManager)
         {
             _logger = logger;
             _dummyClass = new DummyClass();
-            _lockManager = new LockManager(10, _logger);
+            _lockManager = lockManager;
         }
 
 

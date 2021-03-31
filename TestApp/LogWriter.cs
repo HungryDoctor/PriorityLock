@@ -21,9 +21,9 @@ namespace TestApp
             stringBuilder.AppendLine();
         }
 
-        public void SaveToFile()
+        public void SaveToFile(string filePath)
         {
-            File.WriteAllText("./logFile.log", stringBuilder.ToString());
+            File.WriteAllText(filePath, stringBuilder.ToString());
         }
     }
 }

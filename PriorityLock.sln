@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31112.23
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "TestApp\TestApp.csproj", "{791DB28E-0DF1-4F51-8981-7FD8CAC43C1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestApp", "TestApp\TestApp.csproj", "{791DB28E-0DF1-4F51-8981-7FD8CAC43C1D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PriorityLock.Common", "PriorityLock.Common\PriorityLock.Common.csproj", "{8B0EB360-8455-4E6A-A7F6-BFD91CF3CCCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PriorityLock.Common", "PriorityLock.Common\PriorityLock.Common.csproj", "{8B0EB360-8455-4E6A-A7F6-BFD91CF3CCCA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PriorityLock.LockManager_v1", "PriorityLock.LockManager_v1\PriorityLock.LockManager_v1.csproj", "{248DEC56-E490-4C60-A4F9-FAEEF133C089}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PriorityLock.LockManager", "PriorityLock.LockManager_v1\PriorityLock.LockManager.csproj", "{248DEC56-E490-4C60-A4F9-FAEEF133C089}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -2,6 +2,8 @@
 {
     public interface ILockManager
     {
-        ILocker Lock(int priority);
+        int Capacity { get; }
+
+        ILocker Lock(int priority = 0);
     }
 }
