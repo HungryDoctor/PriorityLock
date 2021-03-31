@@ -1,6 +1,4 @@
 ﻿using PriorityLock.Common.Interfaces;
-using PriorityLock.LockManager;
-using System;
 using System.Threading.Tasks;
 using TestApp.Dummy;
 using TestApp.Dummy.Interfaces;
@@ -13,18 +11,14 @@ namespace TestApp
         {
             LogWriter logger = new LogWriter();
 
-            PerformActions(logger, new LockManager(10, logger));
-            logger.SaveToFile("./logFile_v1.log");
+            PerformActions(logger);
 
-            Console.ReadKey();
-
-            PerformActions(logger, new LockManager_V2(10, logger));
             logger.SaveToFile("./logFile_v2.log");
         }
 
-        private static void PerformActions(ILogger logger, ILockManager lockManager)
+        private static void PerformActions(ILogger logger)
         {
-            DummyWithConcurrencyLock dummy = new DummyWithConcurrencyLock(logger, lockManager);
+            DummyWithConcurrencyLock dummy = new DummyWithConcurrencyLock(logger);
 
             Parallel.For(0, 5, (x) =>
             {
@@ -57,6 +51,8 @@ namespace TestApp
             logger.WriteLine();
             logger.WriteLine($"Left capacity (should be 10): {dummy.Capacity}");
             logger.WriteLine($"OperationsCounter: {dummy.OperationsCounter}");
+
+            dummy.Dispose();
         }
 
         private static void OperationSet1(IDummy dummyWithConcurrency)

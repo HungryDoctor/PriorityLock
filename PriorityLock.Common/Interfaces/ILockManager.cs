@@ -1,6 +1,8 @@
-﻿namespace PriorityLock.Common.Interfaces
+﻿using System;
+
+namespace PriorityLock.Common.Interfaces
 {
-    public interface ILockManager
+    public interface ILockManager : IDisposable
     {
         int Capacity { get; }
 

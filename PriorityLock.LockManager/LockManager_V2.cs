@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace PriorityLock.LockManager
 {
-    public class LockManager_V2 : ILockManager, IDisposable
+    public class LockManager_V2 : ILockManager
     {
         private static readonly TimeSpan resetEventWaitTimeSpan = TimeSpan.FromSeconds(10);
         private readonly ILogger _logger;
@@ -125,7 +125,7 @@ namespace PriorityLock.LockManager
                 if (spinWait.NextSpinWillYield)
                 {
                     _resetEvent.Reset();
-                    if(_resetEvent.WaitOne(resetEventWaitTimeSpan))
+                    if (_resetEvent.WaitOne(resetEventWaitTimeSpan))
                     {
                         spinWait.Reset();
                     }

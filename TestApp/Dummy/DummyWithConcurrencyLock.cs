@@ -1,4 +1,5 @@
 ﻿using PriorityLock.Common.Interfaces;
+using PriorityLock.LockManager;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -6,7 +7,7 @@ using TestApp.Dummy.Interfaces;
 
 namespace TestApp.Dummy
 {
-    class DummyWithConcurrencyLock : IDummy
+    class DummyWithConcurrencyLock : IDummy, IDisposable
     {
         private readonly ILogger _logger;
         private readonly DummyClass _dummyClass;
@@ -16,11 +17,16 @@ namespace TestApp.Dummy
         public int OperationsCounter => _dummyClass.OperationsCounter;
 
 
-        public DummyWithConcurrencyLock(ILogger logger, ILockManager lockManager)
+        public DummyWithConcurrencyLock(ILogger logger)
         {
             _logger = logger;
             _dummyClass = new DummyClass();
-            _lockManager = lockManager;
+            _lockManager = new LockManager_V2(10, logger);
+        }
+
+        public void Dispose()
+        {
+            _lockManager.Dispose();
         }
 
 
@@ -62,7 +68,6 @@ namespace TestApp.Dummy
                 _dummyClass.DummyOperation4();
             }
         }
-
 
         private class TimeLogger : IDisposable
         {
