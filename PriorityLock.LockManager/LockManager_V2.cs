@@ -17,6 +17,8 @@ namespace PriorityLock.LockManager
         private readonly ReaderWriterLockSlim _pendingLocksReaderWriterLock;
         private readonly SortedSet<PendingPriority> _pendingPriorities;
         private readonly int[] _operationsTokens;
+
+        //for statistics only
         private readonly int[] _priorities;
         private long _capacity;
         private bool _disposed;
@@ -116,10 +118,12 @@ namespace PriorityLock.LockManager
                     IsHighestPriorityFromPending(in priority) &&
                     Interlocked.CompareExchange(ref _capacity, currentCapacity - 1, currentCapacity) == currentCapacity)
                 {
-                    Monitor.Enter(_locker);
-                    stopWatch.Stop();
+                    int toReturn = AcquireLock(in priority);
 
-                    break;
+                    stopWatch.Stop();
+                    DecrementPriorityWaitingCounter(priority);
+
+                    return toReturn;
                 }
 
                 if (spinWait.NextSpinWillYield)
@@ -135,12 +139,14 @@ namespace PriorityLock.LockManager
                     spinWait.SpinOnce();
                 }
             }
+        }
 
-            DecrementPriorityWaitingCounter(priority);
-
-            try
+        private int AcquireLock(in int priority)
+        {
+            int freeIndex;
+            lock (_locker)
             {
-                var freeIndex = Array.IndexOf(_operationsTokens, -1);
+                freeIndex = Array.IndexOf(_operationsTokens, -1);
                 if (freeIndex == -1)
                 {
                     throw new InvalidOperationException("No free index for thread");
@@ -149,14 +155,11 @@ namespace PriorityLock.LockManager
                 _logger.WriteLine("Lock Accquired. " + GetCurrentState(in freeIndex));
 
                 _operationsTokens[freeIndex] = freeIndex;
-                _priorities[freeIndex] = priority;
+            }
 
-                return freeIndex;
-            }
-            finally
-            {
-                Monitor.Exit(_locker);
-            }
+            _priorities[freeIndex] = priority;
+
+            return freeIndex;
         }
 
         private bool IsHighestPriorityFromPending(in int thisThreadPriority)
@@ -233,6 +236,7 @@ namespace PriorityLock.LockManager
                 _pendingLocksReaderWriterLock.ExitWriteLock();
             }
         }
+
 
         private string GetCurrentState(in int operationToken)
         {
