@@ -16,6 +16,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PriorityLock.Common\PriorityLock.Common.csproj" />
-    <ProjectReference Include="..\PriorityLock.LockManager_v1\PriorityLock.LockManager.csproj" />
+    <ProjectReference Include="..\PriorityLock.LockManager\PriorityLock.LockManager.csproj" />
   </ItemGroup>
 </Project>

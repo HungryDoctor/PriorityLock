@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestApp", "TestApp\TestApp.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PriorityLock.Common", "PriorityLock.Common\PriorityLock.Common.csproj", "{8B0EB360-8455-4E6A-A7F6-BFD91CF3CCCA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PriorityLock.LockManager", "PriorityLock.LockManager_v1\PriorityLock.LockManager.csproj", "{248DEC56-E490-4C60-A4F9-FAEEF133C089}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PriorityLock.LockManager", "PriorityLock.LockManager\PriorityLock.LockManager.csproj", "{248DEC56-E490-4C60-A4F9-FAEEF133C089}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

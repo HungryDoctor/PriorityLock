@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-namespace PriorityLock.LockManager_v1
+namespace PriorityLock.LockManager
 {
     public class LockManager_V2 : ILockManager
     {

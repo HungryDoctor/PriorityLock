@@ -1,5 +1,5 @@
 ﻿using PriorityLock.Common.Interfaces;
-using PriorityLock.LockManager_v1;
+using PriorityLock.LockManager;
 using System.Threading.Tasks;
 using TestApp.Dummy;
 using TestApp.Dummy.Interfaces;
