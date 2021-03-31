@@ -71,7 +71,7 @@ namespace PriorityLock.LockManager
                     throw new TimeoutException("Can't accquire lock");
                 }
 
-                long currentCapacity = _capacity;
+                long currentCapacity = Interlocked.Read(ref _capacity);
                 if (currentCapacity > 0 &&
                     IsHighestPriorityFromPending(in priority) &&
                     Interlocked.CompareExchange(ref _capacity, currentCapacity - 1, currentCapacity) == currentCapacity)

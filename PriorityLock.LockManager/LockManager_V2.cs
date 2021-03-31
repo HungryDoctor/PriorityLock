@@ -8,10 +8,12 @@ namespace PriorityLock.LockManager
 {
     public class LockManager_V2 : ILockManager
     {
+        private static readonly TimeSpan resetEventWaitTimeSpan = TimeSpan.FromSeconds(10);
         private readonly ILogger _logger;
         private readonly int _maxConcurrentOperations;
         private readonly TimeSpan _tryStartOperationTimeSpan;
         private readonly object _locker;
+        private readonly ManualResetEvent _resetEvent;
         private readonly ReaderWriterLockSlim _pendingLocksReaderWriterLock;
         private readonly SortedSet<PendingPriority> _pendingPriorities;
         private readonly int[] _operationsTokens;
@@ -29,6 +31,7 @@ namespace PriorityLock.LockManager
             _tryStartOperationTimeSpan = tryStartOperationTimeSpan;
 
             _locker = new object();
+            _resetEvent = new ManualResetEvent(false);
             _pendingLocksReaderWriterLock = new ReaderWriterLockSlim();
             _pendingPriorities = new SortedSet<PendingPriority>();
 
@@ -55,6 +58,8 @@ namespace PriorityLock.LockManager
 
             Interlocked.Exchange(ref _operationsTokens[operationIndex], -1);
             Interlocked.Increment(ref _capacity);
+
+            _resetEvent.Set();
         }
 
         private int StartLock(in int priority)
@@ -71,7 +76,7 @@ namespace PriorityLock.LockManager
                     throw new TimeoutException("Can't accquire lock");
                 }
 
-                long currentCapacity = _capacity;
+                long currentCapacity = Interlocked.Read(ref _capacity);
                 if (currentCapacity > 0 &&
                     IsHighestPriorityFromPending(in priority) &&
                     Interlocked.CompareExchange(ref _capacity, currentCapacity - 1, currentCapacity) == currentCapacity)
@@ -82,11 +87,17 @@ namespace PriorityLock.LockManager
                     break;
                 }
 
-                bool willYield = spinWait.NextSpinWillYield;
-                spinWait.SpinOnce();
-                if (willYield)
+                if (spinWait.NextSpinWillYield)
                 {
-                    spinWait.Reset();
+                    _resetEvent.Reset();
+                    if(_resetEvent.WaitOne(resetEventWaitTimeSpan))
+                    {
+                        spinWait.Reset();
+                    }
+                }
+                else
+                {
+                    spinWait.SpinOnce();
                 }
             }
 
