@@ -14,7 +14,7 @@ namespace PriorityLock.LockManager_v1
         private readonly object _locker;
         private readonly ReaderWriterLockSlim _pendingLocksReaderWriterLock;
         private readonly SortedSet<PendingPriority> _pendingPriorities;
-        private readonly int[] _operationsToken;
+        private readonly int[] _operationsTokens;
         private readonly int[] _priorities;
         private long _capacity;
 
@@ -32,7 +32,7 @@ namespace PriorityLock.LockManager_v1
             _pendingLocksReaderWriterLock = new ReaderWriterLockSlim();
             _pendingPriorities = new SortedSet<PendingPriority>();
 
-            _operationsToken = new int[_maxConcurrentOperations];
+            _operationsTokens = new int[_maxConcurrentOperations];
             _priorities = new int[_maxConcurrentOperations];
 
             ClearTokens();
@@ -49,17 +49,11 @@ namespace PriorityLock.LockManager_v1
             return new Locker(this, in priority);
         }
 
-        private void Release(in int token)
+        private void Release(in int operationIndex)
         {
-            _logger.WriteLine("Release. " + GetCurrentState(in token));
+            _logger.WriteLine("Release. " + GetCurrentState(in operationIndex));
 
-            var index = Array.IndexOf(_operationsToken, token);
-            if (index == -1)
-            {
-                throw new InvalidOperationException("Currrent therad is not locked");
-            }
-
-            Interlocked.Exchange(ref _operationsToken[index], -1);
+            Interlocked.Exchange(ref _operationsTokens[operationIndex], -1);
             Interlocked.Increment(ref _capacity);
         }
 
@@ -100,7 +94,7 @@ namespace PriorityLock.LockManager_v1
 
             try
             {
-                var freeIndex = Array.IndexOf(_operationsToken, -1);
+                var freeIndex = Array.IndexOf(_operationsTokens, -1);
                 if (freeIndex == -1)
                 {
                     throw new InvalidOperationException("No free index for thread");
@@ -108,7 +102,7 @@ namespace PriorityLock.LockManager_v1
 
                 _logger.WriteLine("Lock Accquired. " + GetCurrentState(in freeIndex));
 
-                _operationsToken[freeIndex] = freeIndex;
+                _operationsTokens[freeIndex] = freeIndex;
                 _priorities[freeIndex] = priority;
 
                 return freeIndex;
@@ -196,14 +190,14 @@ namespace PriorityLock.LockManager_v1
 
         private string GetCurrentState(in int operationToken)
         {
-            return $"OpeartionToken: '{operationToken}'. ThreadId: '{Thread.CurrentThread.ManagedThreadId}'. Current threads state: {string.Join(", ", _operationsToken)}. Current priorities state: {string.Join(", ", _priorities)}\n";
+            return $"OpeartionToken: '{operationToken}'. ThreadId: '{Thread.CurrentThread.ManagedThreadId}'. Current threads state: {string.Join(", ", _operationsTokens)}. Current priorities state: {string.Join(", ", _priorities)}\n";
         }
 
         private void ClearTokens()
         {
-            for (int x = 0; x < _operationsToken.Length; x++)
+            for (int x = 0; x < _operationsTokens.Length; x++)
             {
-                _operationsToken[x] = -1;
+                _operationsTokens[x] = -1;
             }
         }
 
@@ -212,13 +206,13 @@ namespace PriorityLock.LockManager_v1
         {
             private readonly LockManager _lockManager;
             private bool _isDisposed;
-            private readonly int _token;
+            private readonly int _operationIndex;
 
 
             public Locker(LockManager lockManager, in int priority = 0)
             {
                 _lockManager = lockManager;
-                _token = _lockManager.StartLock(priority);
+                _operationIndex = _lockManager.StartLock(priority);
             }
 
 
@@ -229,7 +223,7 @@ namespace PriorityLock.LockManager_v1
                     throw new ObjectDisposedException(nameof(Locker));
                 }
 
-                _lockManager.Release(in _token);
+                _lockManager.Release(in _operationIndex);
                 GC.SuppressFinalize(this);
 
                 _isDisposed = true;
